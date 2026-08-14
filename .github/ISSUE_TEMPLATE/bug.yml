@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a reproducible problem using synthetic receipt text
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: checkboxes
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed real receipts, payment details, credentials, and personal data.
+          required: true
+  - type: textarea
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Minimal synthetic OCR text and reproduction steps
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Swift and platform versions
+    validations:
+      required: true
+
