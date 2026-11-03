@@ -15,6 +15,18 @@ public struct ReceiptParser: Sendable {
         "おつり", "お釣り", "釣銭", "レジ", "取引", "no.", "№",
     ]
 
+    /// Receipt titles that often sit above the merchant name. A line that is
+    /// exactly one of these (ignoring spaces and brackets) is not a merchant.
+    private static let receiptHeadings: Set<String> = [
+        "領収書", "領収証", "レシート", "お客様控え", "お客様控", "お客さま控え", "控え",
+        "再発行", "明細書", "ご利用明細", "ご利用明細書", "receipt",
+    ]
+
+    /// Greetings printed at the top or bottom of a receipt.
+    private static let greetingFragments = [
+        "ありがとうございま", "いらっしゃいませ", "ご来店", "またのお越し", "毎度",
+    ]
+
     /// Larger values are much more likely to be barcodes or identifiers.
     private static let maximumPlausibleTotal = Decimal(9_999_999)
 
@@ -47,11 +59,20 @@ public struct ReceiptParser: Sendable {
     }
 
     private static func isMerchantCandidate(_ line: String) -> Bool {
-        guard !isIgnoredLine(line), !isTotalLine(line) else { return false }
+        guard !isIgnoredLine(line), !isTotalLine(line), !isHeadingOrGreeting(line) else { return false }
 
         return removingNonAmountNumbers(from: normalize(line))
             .replacing(/[0-9¥,\.\s]/, with: "")
             .contains { $0.isLetter }
+    }
+
+    private static func isHeadingOrGreeting(_ line: String) -> Bool {
+        // NFKC rather than `normalize(_:)`: that transform also turns katakana into
+        // half-width forms, while NFKC folds both half-width kana and full-width ASCII.
+        let bare = line.precomposedStringWithCompatibilityMapping
+            .replacing(/[\s\[\]()（）【】「」『』<>〈〉《》*＊・:：-]/, with: "")
+            .lowercased()
+        return receiptHeadings.contains(bare) || greetingFragments.contains { bare.contains($0) }
     }
 
     /// Without a total keyword, prefer the bottom-most yen-marked amount.
