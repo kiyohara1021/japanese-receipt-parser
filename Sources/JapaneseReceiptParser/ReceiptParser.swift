@@ -118,6 +118,13 @@ public struct ReceiptParser: Sendable {
     private static func removingNonAmountNumbers(from line: String) -> String {
         line
             .replacing(/[0-9]{4}[年\/\-.] ?[0-9]{1,2}[月\/\-.] ?[0-9]{1,2}日?/, with: " ")
+            // Japanese era dates: 令和7年10月1日, R7.10.1, 平成31年4月30日, 令和元年5月1日
+            // A single-letter era must not be the end of a word, so the preceding character is kept.
+            .replacing(/(^|[^A-Za-z])(令和|平成|昭和|[RrHhSs]) ?([0-9]{1,2}|元)[年.\/\-] ?[0-9]{1,2}[月.\/\-] ?[0-9]{1,2}日?/) { "\($0.output.1) " }
+            // Two-digit years: 25/10/01, 25-10-01, 25.10.01 (not part of a longer number)
+            .replacing(/(^|[^0-9])[0-9]{2}[\/\-.][0-9]{1,2}[\/\-.][0-9]{1,2}(?![0-9])/) { "\($0.output.1) " }
+            // Month and day with a weekday: 10/01(水), 10月1日(水)
+            .replacing(/[0-9]{1,2}[\/月][0-9]{1,2}日? ?\([月火水木金土日]\)/, with: " ")
             .replacing(/[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?/, with: " ")
             .replacing(/[0-9]{2,5}-[0-9]{1,4}-[0-9]{3,4}/, with: " ")
             .replacing(/T[0-9]{13}/, with: " ")
