@@ -110,6 +110,54 @@ final class ReceiptParserTests: XCTestCase {
         XCTAssertEqual(parser.parse(lines: ["架空電器", "合計 ¥12.800"]).totalAmount, 12_800)
         XCTAssertEqual(parser.parse(lines: ["Hours 10.30", "Fictional Deli", "TOTAL ¥1,200"]).merchantName, "Hours 10.30")
     }
+
+    func testSkipsReceiptHeadingsAndGreetingsWhenChoosingMerchant() {
+        let receipt = parser.parse(lines: [
+            "領収書",
+            "【 レシート 】",
+            "いらっしゃいませ",
+            "架空ベーカリー 駅前店",
+            "合計 ¥640",
+            "ご来店ありがとうございました",
+        ])
+        XCTAssertEqual(receipt.merchantName, "架空ベーカリー 駅前店")
+    }
+
+    func testKeepsAMerchantWhoseNameOnlyContainsAHeadingWord() {
+        let receipt = parser.parse(lines: ["お客様控え", "レシート工房 架空店", "合計 ¥500"])
+        XCTAssertEqual(receipt.merchantName, "レシート工房 架空店")
+    }
+
+    func testRecognizesHalfWidthKatakanaHeadings() {
+        let receipt = parser.parse(lines: ["ﾚｼｰﾄ", "架空書店", "合計 ¥980"])
+        XCTAssertEqual(receipt.merchantName, "架空書店")
+    }
+
+    func testTreatsAnEnglishReceiptTitleAsAHeading() {
+        let receipt = parser.parse(lines: ["RECEIPT", "Fictional Deli", "TOTAL ¥1,200"])
+        XCTAssertEqual(receipt.merchantName, "Fictional Deli")
+    }
+
+    func testRecognizesYenSuffixWithoutKeyword() {
+        // Without the yen marker, the item code 4901 would win as the largest bare number.
+        let receipt = parser.parse(lines: ["架空商店", "4901 りんご 300円", "4902 みかん 250円", "1,050円"])
+        XCTAssertEqual(receipt.totalAmount, 1_050)
+    }
+
+    func testRecognizesYenSuffixWithSpaceAndFullWidthDigits() {
+        let receipt = parser.parse(lines: ["架空商店", "商品コード 7012", "５５０ 円"])
+        XCTAssertEqual(receipt.totalAmount, 550)
+    }
+
+    func testTreatsBackslashMisreadAsYen() {
+        let receipt = parser.parse(lines: ["架空商店", "商品コード 8801", "\\1,280"])
+        XCTAssertEqual(receipt.totalAmount, 1_280)
+    }
+
+    func testDoesNotTreatABackslashInsideTextAsYen() {
+        let receipt = parser.parse(lines: ["架空商店", "C:\\data\\9999", "コーヒー 500"])
+        XCTAssertEqual(receipt.totalAmount, 9_999)
+    }
 }
 
 final class ImageTextRecognizerTests: XCTestCase {
