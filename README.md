@@ -13,7 +13,7 @@ An API-key-free Swift package that extracts a merchant candidate and a plausible
 
 ## Why
 
-Japanese receipts commonly contain full-width digits, yen symbols, invoice registration numbers, phone numbers, dates, tender, and OCR punctuation mistakes. This package handles those common sources of false totals without uploading receipt images.
+Japanese receipts commonly contain full-width digits, yen symbols, invoice registration numbers, phone numbers, dates, tender, and OCR punctuation mistakes. This package handles those common sources of false totals without uploading receipt images. When no total keyword is found, the bottom-most amount marked as yen wins — `¥1,234`, `1,234円`, or `\1,234`, since OCR often reads `¥` as a backslash.
 
 ## Features
 

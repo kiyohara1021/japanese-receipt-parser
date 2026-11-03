@@ -12,4 +12,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Anonymous Japanese receipt fixtures and tests
 - English and Japanese documentation
 
+### Fixed
+
+- Amounts written as `1,234円`, and `¥` misread by OCR as a backslash (`\1,234`), count as yen-marked amounts when no total keyword is present. Previously the largest bare number, such as an item code, could be chosen.
+
 [Unreleased]: https://github.com/kiyohara1021/japanese-receipt-parser/commits/main
