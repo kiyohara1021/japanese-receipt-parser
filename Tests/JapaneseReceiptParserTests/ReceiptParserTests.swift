@@ -88,6 +88,28 @@ final class ReceiptParserTests: XCTestCase {
         let data = try JSONEncoder().encode(receipt)
         XCTAssertFalse(data.isEmpty)
     }
+
+    func testIgnoresEraDatesWhenChoosingMerchant() {
+        for header in ["令和7年10月1日", "R7.10.1", "令和元年5月1日", "平成31年4月30日"] {
+            let receipt = parser.parse(lines: [header, "架空書店", "合計 ¥980"])
+            XCTAssertEqual(receipt.merchantName, "架空書店", header)
+        }
+    }
+
+    func testIgnoresTwoDigitYearAndWeekdayDates() {
+        for header in ["25/10/01 12:30", "25-10-01", "10/01(水)", "10月1日（水）"] {
+            let receipt = parser.parse(lines: [header, "架空カフェ", "コーヒー 45"])
+            XCTAssertEqual(receipt.merchantName, "架空カフェ", header)
+            XCTAssertEqual(receipt.totalAmount, 45, header)
+        }
+    }
+
+    func testKeepsAmountsAndQuantitiesNextToDates() {
+        let receipt = parser.parse(lines: ["架空商店", "25/10/01", "2点 合計 ¥1,000"])
+        XCTAssertEqual(receipt.totalAmount, 1_000)
+        XCTAssertEqual(parser.parse(lines: ["架空電器", "合計 ¥12.800"]).totalAmount, 12_800)
+        XCTAssertEqual(parser.parse(lines: ["Hours 10.30", "Fictional Deli", "TOTAL ¥1,200"]).merchantName, "Hours 10.30")
+    }
 }
 
 final class ImageTextRecognizerTests: XCTestCase {
