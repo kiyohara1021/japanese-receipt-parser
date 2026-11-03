@@ -88,6 +88,33 @@ final class ReceiptParserTests: XCTestCase {
         let data = try JSONEncoder().encode(receipt)
         XCTAssertFalse(data.isEmpty)
     }
+
+    func testSkipsReceiptHeadingsAndGreetingsWhenChoosingMerchant() {
+        let receipt = parser.parse(lines: [
+            "領収書",
+            "【 レシート 】",
+            "いらっしゃいませ",
+            "架空ベーカリー 駅前店",
+            "合計 ¥640",
+            "ご来店ありがとうございました",
+        ])
+        XCTAssertEqual(receipt.merchantName, "架空ベーカリー 駅前店")
+    }
+
+    func testKeepsAMerchantWhoseNameOnlyContainsAHeadingWord() {
+        let receipt = parser.parse(lines: ["お客様控え", "レシート工房 架空店", "合計 ¥500"])
+        XCTAssertEqual(receipt.merchantName, "レシート工房 架空店")
+    }
+
+    func testRecognizesHalfWidthKatakanaHeadings() {
+        let receipt = parser.parse(lines: ["ﾚｼｰﾄ", "架空書店", "合計 ¥980"])
+        XCTAssertEqual(receipt.merchantName, "架空書店")
+    }
+
+    func testTreatsAnEnglishReceiptTitleAsAHeading() {
+        let receipt = parser.parse(lines: ["RECEIPT", "Fictional Deli", "TOTAL ¥1,200"])
+        XCTAssertEqual(receipt.merchantName, "Fictional Deli")
+    }
 }
 
 final class ImageTextRecognizerTests: XCTestCase {

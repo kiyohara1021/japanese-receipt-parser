@@ -12,4 +12,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Anonymous Japanese receipt fixtures and tests
 - English and Japanese documentation
 
+### Fixed
+
+- Receipt titles such as 領収書, レシート and お客様控え, and greetings such as いらっしゃいませ, are no longer chosen as the merchant name. A merchant whose name merely contains one of these words is still recognized.
+
 [Unreleased]: https://github.com/kiyohara1021/japanese-receipt-parser/commits/main
