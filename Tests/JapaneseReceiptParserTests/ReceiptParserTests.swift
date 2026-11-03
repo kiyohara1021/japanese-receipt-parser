@@ -115,6 +115,27 @@ final class ReceiptParserTests: XCTestCase {
         let receipt = parser.parse(lines: ["RECEIPT", "Fictional Deli", "TOTAL ¥1,200"])
         XCTAssertEqual(receipt.merchantName, "Fictional Deli")
     }
+
+    func testRecognizesYenSuffixWithoutKeyword() {
+        // Without the yen marker, the item code 4901 would win as the largest bare number.
+        let receipt = parser.parse(lines: ["架空商店", "4901 りんご 300円", "4902 みかん 250円", "1,050円"])
+        XCTAssertEqual(receipt.totalAmount, 1_050)
+    }
+
+    func testRecognizesYenSuffixWithSpaceAndFullWidthDigits() {
+        let receipt = parser.parse(lines: ["架空商店", "商品コード 7012", "５５０ 円"])
+        XCTAssertEqual(receipt.totalAmount, 550)
+    }
+
+    func testTreatsBackslashMisreadAsYen() {
+        let receipt = parser.parse(lines: ["架空商店", "商品コード 8801", "\\1,280"])
+        XCTAssertEqual(receipt.totalAmount, 1_280)
+    }
+
+    func testDoesNotTreatABackslashInsideTextAsYen() {
+        let receipt = parser.parse(lines: ["架空商店", "C:\\data\\9999", "コーヒー 500"])
+        XCTAssertEqual(receipt.totalAmount, 9_999)
+    }
 }
 
 final class ImageTextRecognizerTests: XCTestCase {

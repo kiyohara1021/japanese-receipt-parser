@@ -95,10 +95,17 @@ public struct ReceiptParser: Sendable {
             .max()
     }
 
+    /// An amount explicitly marked as yen: `¥1,234`, `1,234円`, or `\1,234`.
+    /// OCR often reads `¥` as a backslash (they share 0x5C in Shift_JIS), so a
+    /// backslash counts only at the start of the line or after a space.
     private static func yenAmount(in line: String) -> Decimal? {
-        removingNonAmountNumbers(from: normalize(line))
-            .matches(of: /[¥￥]\s?([0-9][0-9,.]*)/)
-            .compactMap { decimalValue(of: String($0.output.1)) }
+        let text = removingNonAmountNumbers(from: normalize(line))
+        let prefixed = text.matches(of: /[¥￥]\s?([0-9][0-9,.]*)/).map { String($0.output.1) }
+        let suffixed = text.matches(of: /([0-9][0-9,.]*)\s?円/).map { String($0.output.1) }
+        let backslashed = text.matches(of: /(?:^|\s)\\\s?([0-9][0-9,.]*)/).map { String($0.output.1) }
+
+        return (prefixed + suffixed + backslashed)
+            .compactMap(decimalValue(of:))
             .filter { $0 <= maximumPlausibleTotal }
             .max()
     }
